@@ -1,0 +1,46 @@
+[
+  {
+    "id": 1,
+    "name": "Paracetamol 500mg",
+    "genericName": "Acetaminophen",
+    "category": "Pain Relief",
+    "price": 25,
+    "availability": "Available",
+    "pharmacy": "City Medical Store",
+    "distance": "2.3 km",
+    "stock": 50
+  },
+  {
+    "id": 2,
+    "name": "Crocin Advance",
+    "genericName": "Paracetamol",
+    "category": "Pain Relief",
+    "price": 35,
+    "availability": "Available",
+    "pharmacy": "Health Plus Pharmacy",
+    "distance": "1.8 km",
+    "stock": 25
+  },
+  {
+    "id": 3,
+    "name": "Amoxicillin 250mg",
+    "genericName": "Amoxicillin",
+    "category": "Antibiotic",
+    "price": 120,
+    "availability": "Out of Stock",
+    "pharmacy": "Care Pharmacy",
+    "distance": "3.1 km",
+    "stock": 0
+  },
+  {
+    "id": 4,
+    "name": "Cetirizine 10mg",
+    "genericName": "Cetirizine",
+    "category": "Allergy",
+    "price": 45,
+    "availability": "Available",
+    "pharmacy": "City Medical Store",
+    "distance": "2.3 km",
+    "stock": 30
+  }
+]

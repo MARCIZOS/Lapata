@@ -1,0 +1,52 @@
+{
+  "conditions": [
+    {
+      "id": 1,
+      "name": "Common Cold",
+      "confidence": 85,
+      "symptoms": ["runny nose", "cough", "sore throat", "fatigue"],
+      "recommendations": [
+        "Rest and stay hydrated",
+        "Use saline nasal rinses",
+        "Consider over-the-counter pain relievers"
+      ],
+      "urgency": "low"
+    },
+    {
+      "id": 2,
+      "name": "Seasonal Allergies",
+      "confidence": 75,
+      "symptoms": ["sneezing", "runny nose", "itchy eyes", "congestion"],
+      "recommendations": [
+        "Avoid known allergens",
+        "Consider antihistamines",
+        "Use air purifiers indoors"
+      ],
+      "urgency": "low"
+    },
+    {
+      "id": 3,
+      "name": "Migraine",
+      "confidence": 70,
+      "symptoms": ["headache", "nausea", "light sensitivity", "fatigue"],
+      "recommendations": [
+        "Rest in a dark, quiet room",
+        "Apply cold compress",
+        "Consider prescribed medications"
+      ],
+      "urgency": "medium"
+    },
+    {
+      "id": 4,
+      "name": "Gastritis",
+      "confidence": 65,
+      "symptoms": ["stomach pain", "nausea", "bloating", "loss of appetite"],
+      "recommendations": [
+        "Avoid spicy and acidic foods",
+        "Eat smaller, frequent meals",
+        "Consider antacids"
+      ],
+      "urgency": "medium"
+    }
+  ]
+}

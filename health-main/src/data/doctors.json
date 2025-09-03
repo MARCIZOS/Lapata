@@ -1,0 +1,46 @@
+[
+  {
+    "id": 1,
+    "name": "Dr. Rajesh Kumar",
+    "specialty": "general",
+    "experience": "15 years",
+    "rating": 4.8,
+    "availability": "Available",
+    "languages": ["English", "Hindi"],
+    "consultationFee": 300,
+    "image": "https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=400"
+  },
+  {
+    "id": 2,
+    "name": "Dr. Priya Sharma",
+    "specialty": "pediatrics",
+    "experience": "12 years",
+    "rating": 4.9,
+    "availability": "Available",
+    "languages": ["English", "Hindi", "Punjabi"],
+    "consultationFee": 350,
+    "image": "https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=400"
+  },
+  {
+    "id": 3,
+    "name": "Dr. Sunita Patel",
+    "specialty": "gynecology",
+    "experience": "18 years",
+    "rating": 4.7,
+    "availability": "Busy",
+    "languages": ["English", "Hindi"],
+    "consultationFee": 400,
+    "image": "https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg?auto=compress&cs=tinysrgb&w=400"
+  },
+  {
+    "id": 4,
+    "name": "Dr. Amit Singh",
+    "specialty": "cardiology",
+    "experience": "20 years",
+    "rating": 4.9,
+    "availability": "Available",
+    "languages": ["English", "Hindi", "Punjabi"],
+    "consultationFee": 500,
+    "image": "https://images.pexels.com/photos/6749711/pexels-photo-6749711.jpeg?auto=compress&cs=tinysrgb&w=400"
+  }
+]
