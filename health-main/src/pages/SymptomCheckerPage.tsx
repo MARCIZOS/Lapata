@@ -123,7 +123,7 @@ const SymptomCheckerPage: React.FC = () => {
           ) : (
             <>
               <Search className="h-5 w-5" />
-              <span>{t('symptoms.checkSymptoms')}</span>
+              <span>{t('CheckSymptoms')}</span>
             </>
           )}
         </button>

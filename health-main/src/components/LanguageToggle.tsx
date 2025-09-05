@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Globe } from 'lucide-react';
 
 const LanguageToggle: React.FC = () => {
   const { i18n } = useTranslation();
@@ -16,8 +15,7 @@ const LanguageToggle: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center space-x-2">
-      <Globe className="h-4 w-4 text-gray-500" />
+    <div className="flex items-center">
       <div className="flex space-x-1">
         {languages.map((lang) => (
           <button

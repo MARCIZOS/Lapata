@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -9,14 +9,18 @@ import {
   Phone, 
   Clock,
   User,
-  Activity
+  Activity,
+  Video
 } from 'lucide-react';
+import VideoConsultation from '../components/VideoConsultation';
 import DashboardLayout from '../components/DashboardLayout';
 import DashboardCard from '../components/DashboardCard';
 
 const PatientDashboard: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
+  const [activeDoctor, setActiveDoctor] = useState<string | null>(null);
 
   const emergencyNumbers = [
     { name: t('emergency.ambulance'), number: '108', color: 'red' as const },
@@ -33,10 +37,13 @@ const PatientDashboard: React.FC = () => {
       onClick: () => navigate('/patient/consultation')
     },
     {
-      title: t('patient.healthRecords'),
-      icon: FileText,
+      title: 'Video Consultation',
+      icon: Video,
       color: 'blue' as const,
-      onClick: () => navigate('/patient/records')
+      onClick: () => {
+        setActiveDoctor('Dr. Rajesh Kumar');
+        setIsVideoCallActive(true);
+      }
     },
     {
       title: t('patient.medicineChecker'),
@@ -52,8 +59,14 @@ const PatientDashboard: React.FC = () => {
     }
   ];
 
+  const hamburgerQuickActions = quickActions.map(action => ({
+    icon: action.icon,
+    label: action.title,
+    onClick: action.onClick
+  }));
+
   return (
-    <DashboardLayout title={t('patient.dashboard')}>
+    <DashboardLayout title={t('patient.dashboard')} quickActions={hamburgerQuickActions}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
@@ -84,6 +97,8 @@ const PatientDashboard: React.FC = () => {
               color="orange"
             />
           </div>
+
+
 
           {/* Quick Actions */}
           <div className="bg-white rounded-lg shadow-sm p-6">
@@ -178,6 +193,18 @@ const PatientDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Video Consultation Modal */}
+      {isVideoCallActive && activeDoctor && (
+        <VideoConsultation
+          isOpen={isVideoCallActive}
+          onClose={() => {
+            setIsVideoCallActive(false);
+            setActiveDoctor(null);
+          }}
+          patientName={activeDoctor}
+        />
+      )}
     </DashboardLayout>
   );
 };

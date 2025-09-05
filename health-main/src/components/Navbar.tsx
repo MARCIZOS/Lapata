@@ -33,7 +33,7 @@ const Navbar: React.FC = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <Heart className="h-8 w-8 text-teal-600" />
-              <span className="text-xl font-bold text-gray-800">HealthConnect</span>
+              <span className="text-xl font-bold text-gray-800">Rakhwali</span>
             </Link>
           </div>
 

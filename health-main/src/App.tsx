@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './i18n';
 import { authService } from './utils/auth';
+import LandingPage from './pages/LandingPage';
 
 // Auth Pages
 import RegistrationPage from './pages/RegistrationPage';
@@ -22,19 +23,6 @@ import SymptomCheckerPage from './pages/SymptomCheckerPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
-  const user = authService.getCurrentUser();
-
-  // Redirect to appropriate dashboard if already logged in
-  const getDefaultRoute = () => {
-    if (!user) return '/register';
-    
-    switch (user.role) {
-      case 'citizen': return '/patient';
-      case 'doctor': return '/doctor';
-      case 'pharmacy': return '/pharmacy';
-      default: return '/register';
-    }
-  };
 
   return (
     <Router>
@@ -84,8 +72,9 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* Default Route */}
-        <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
+  {/* Default Routes */}
+  <Route path="/" element={<LandingPage />} />
+  <Route path="*" element={<LandingPage />} />
       </Routes>
     </Router>
   );

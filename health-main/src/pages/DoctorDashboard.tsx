@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Calendar, 
@@ -9,11 +9,39 @@ import {
   Clipboard,
   TrendingUp
 } from 'lucide-react';
+import PatientRecordsModal from '../components/PatientRecordsModal';
+import VideoConsultation from '../components/VideoConsultation';
 import DashboardLayout from '../components/DashboardLayout';
 import DashboardCard from '../components/DashboardCard';
+import ManageAvailabilityModal from '../components/ManageAvailabilityModal';
 
 const DoctorDashboard: React.FC = () => {
   const { t } = useTranslation();
+  const [isPatientRecordsOpen, setIsPatientRecordsOpen] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>();
+  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
+  const [activePatient, setActivePatient] = useState<string | null>(null);
+  const [isManageAvailabilityOpen, setIsManageAvailabilityOpen] = useState(false);
+  const [availability, setAvailability] = useState([
+    { day: 'Monday', startTime: '09:00', endTime: '13:00' },
+    { day: 'Monday', startTime: '17:00', endTime: '20:00' },
+    { day: 'Tuesday', startTime: '09:00', endTime: '13:00' },
+    { day: 'Tuesday', startTime: '17:00', endTime: '20:00' },
+    { day: 'Wednesday', startTime: '09:00', endTime: '13:00' },
+    { day: 'Wednesday', startTime: '17:00', endTime: '20:00' },
+    { day: 'Thursday', startTime: '09:00', endTime: '13:00' },
+    { day: 'Thursday', startTime: '17:00', endTime: '20:00' },
+    { day: 'Friday', startTime: '09:00', endTime: '13:00' },
+    { day: 'Friday', startTime: '17:00', endTime: '20:00' }
+  ]);
+
+  const handleSaveAvailability = (newAvailability: any[]) => {
+    // In a real app, this would make an API call to save the availability
+    setAvailability(newAvailability);
+    
+    // Show success message
+    alert('Availability updated successfully!');
+  };
 
   const todaysAppointments = [
     { time: '09:00 AM', patient: 'Rajesh Kumar', type: 'Video', status: 'upcoming' },
@@ -28,8 +56,32 @@ const DoctorDashboard: React.FC = () => {
     { patient: 'Amit Singh', medicine: 'Cetirizine 10mg', date: '2 days ago' }
   ];
 
+  const quickActions = [
+    {
+      icon: Video,
+      label: t('doctor.videoConsult'),
+      onClick: () => {
+        setActivePatient('Patient');
+        setIsVideoCallActive(true);
+      }
+    },
+    {
+      icon: Users,
+      label: t('doctor.patientRecords'),
+      onClick: () => {
+        setSelectedPatientId('1');
+        setIsPatientRecordsOpen(true);
+      }
+    },
+    {
+      icon: Clock,
+      label: t('doctor.availability'),
+      onClick: () => setIsManageAvailabilityOpen(true)
+    }
+  ];
+
   return (
-    <DashboardLayout title={t('doctor.dashboard')}>
+    <DashboardLayout title={t('doctor.dashboard')} quickActions={quickActions}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
@@ -89,7 +141,13 @@ const DoctorDashboard: React.FC = () => {
                       {appointment.status}
                     </span>
                     {appointment.status === 'upcoming' && (
-                      <button className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors duration-200">
+                      <button 
+                        onClick={() => {
+                          setActivePatient(appointment.patient);
+                          setIsVideoCallActive(true);
+                        }}
+                        className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors duration-200"
+                      >
                         <Video className="h-4 w-4" />
                       </button>
                     )}
@@ -125,15 +183,30 @@ const DoctorDashboard: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <button className="w-full flex items-center space-x-3 p-3 text-left border border-gray-200 rounded-lg hover:border-teal-300 hover:bg-teal-50 transition-all duration-200">
+              <button 
+                onClick={() => {
+                  setActivePatient('Patient');
+                  setIsVideoCallActive(true);
+                }}
+                className="w-full flex items-center space-x-3 p-3 text-left border border-gray-200 rounded-lg hover:border-teal-300 hover:bg-teal-50 transition-all duration-200"
+              >
                 <Video className="h-5 w-5 text-teal-600" />
                 <span className="font-medium text-gray-900">{t('doctor.videoConsult')}</span>
               </button>
-              <button className="w-full flex items-center space-x-3 p-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-200">
+              <button 
+                onClick={() => {
+                  setSelectedPatientId('1');
+                  setIsPatientRecordsOpen(true);
+                }}
+                className="w-full flex items-center space-x-3 p-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+              >
                 <Users className="h-5 w-5 text-blue-600" />
                 <span className="font-medium text-gray-900">{t('doctor.patientRecords')}</span>
               </button>
-              <button className="w-full flex items-center space-x-3 p-3 text-left border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all duration-200">
+              <button 
+                onClick={() => setIsManageAvailabilityOpen(true)}
+                className="w-full flex items-center space-x-3 p-3 text-left border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all duration-200"
+              >
                 <Clock className="h-5 w-5 text-green-600" />
                 <span className="font-medium text-gray-900">{t('doctor.availability')}</span>
               </button>
@@ -144,22 +217,71 @@ const DoctorDashboard: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Schedule</h3>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Morning Shift</span>
-                <span className="font-medium">9:00 AM - 1:00 PM</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Evening Shift</span>
-                <span className="font-medium">5:00 PM - 8:00 PM</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Total Hours</span>
-                <span className="font-medium text-teal-600">7 hours</span>
-              </div>
+              {(() => {
+                const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+                const todaysSlots = availability.filter(slot => slot.day === today);
+                const totalHours = todaysSlots.reduce((total, slot) => {
+                  const start = new Date(`2000-01-01T${slot.startTime}`);
+                  const end = new Date(`2000-01-01T${slot.endTime}`);
+                  return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                }, 0);
+
+                return (
+                  <>
+                    {todaysSlots.map((slot, index) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          {index === 0 ? 'Morning Shift' : 'Evening Shift'}
+                        </span>
+                        <span className="font-medium">
+                          {new Date(`2000-01-01T${slot.startTime}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} - {' '}
+                          {new Date(`2000-01-01T${slot.endTime}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Total Hours</span>
+                      <span className="font-medium text-teal-600">
+                        {totalHours.toFixed(1)} hours
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Video Consultation Modal */}
+      {isVideoCallActive && activePatient && (
+        <VideoConsultation
+          isOpen={isVideoCallActive}
+          onClose={() => {
+            setIsVideoCallActive(false);
+            setActivePatient(null);
+          }}
+          patientName={activePatient}
+        />
+      )}
+
+      {/* Patient Records Modal */}
+      <PatientRecordsModal
+        isOpen={isPatientRecordsOpen}
+        onClose={() => {
+          setIsPatientRecordsOpen(false);
+          setSelectedPatientId(undefined);
+        }}
+        patientId={selectedPatientId}
+      />
+
+      {/* Manage Availability Modal */}
+      <ManageAvailabilityModal
+        isOpen={isManageAvailabilityOpen}
+        onClose={() => setIsManageAvailabilityOpen(false)}
+        onSave={handleSaveAvailability}
+        initialAvailability={availability}
+      />
     </DashboardLayout>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
-import { Heart, User, Stethoscope, Building2 } from 'lucide-react';
+import { User, Heart, Stethoscope, Building2 } from 'lucide-react';
 import LanguageToggle from '../components/LanguageToggle';
 import RoleDropdown from '../components/RoleDropdown';
 import { authService, CitizenData, DoctorData, PharmacyData } from '../utils/auth';
@@ -47,6 +47,19 @@ const RegistrationPage: React.FC = () => {
     { value: 'dermatology', label: t('registration.dermatology') },
     { value: 'orthopedics', label: t('registration.orthopedics') }
   ];
+
+  const handlePhoneChange = (value: string, setter: Function, data: any) => {
+    const numbersOnly = value.replace(/[^0-9]/g, '');
+    if (numbersOnly.length <= 10) {
+      setter({ ...data, phone: numbersOnly });
+    }
+  };
+
+  const handleAgeChange = (value: string) => {
+    if (value === '' || (parseInt(value) >= 0 && parseInt(value) <= 150)) {
+      setCitizenData({ ...citizenData, age: value });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,10 +165,12 @@ const RegistrationPage: React.FC = () => {
                       {t('common.phone')}
                     </label>
                     <input
-                      type="tel"
+                      type="text"
+                      maxLength={10}
+                      pattern="[0-9]{10}"
                       required
                       value={citizenData.phone}
-                      onChange={(e) => setCitizenData({ ...citizenData, phone: e.target.value })}
+                      onChange={(e) => handlePhoneChange(e.target.value, setCitizenData, citizenData)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600"
                       placeholder="+91 9876543210"
                     />
@@ -168,8 +183,20 @@ const RegistrationPage: React.FC = () => {
                       <input
                         type="number"
                         required
+                        min="0"
+                        max="150"
                         value={citizenData.age}
-                        onChange={(e) => setCitizenData({ ...citizenData, age: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || (parseInt(value) >= 0 && parseInt(value) <= 150)) {
+                            setCitizenData({ ...citizenData, age: value });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') {
+                            e.preventDefault();
+                          }
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600"
                         placeholder="25"
                       />
@@ -241,10 +268,12 @@ const RegistrationPage: React.FC = () => {
                       {t('common.phone')}
                     </label>
                     <input
-                      type="tel"
+                      type="text"
+                      maxLength={10}
+                      pattern="[0-9]{10}"
                       required
                       value={doctorData.phone}
-                      onChange={(e) => setDoctorData({ ...doctorData, phone: e.target.value })}
+                      onChange={(e) => handlePhoneChange(e.target.value, setDoctorData, doctorData)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600"
                       placeholder="+91 9876543210"
                     />
@@ -345,10 +374,12 @@ const RegistrationPage: React.FC = () => {
                       {t('common.phone')}
                     </label>
                     <input
-                      type="tel"
+                      type="text"
+                      maxLength={10}
+                      pattern="[0-9]{10}"
                       required
                       value={pharmacyData.phone}
-                      onChange={(e) => setPharmacyData({ ...pharmacyData, phone: e.target.value })}
+                      onChange={(e) => handlePhoneChange(e.target.value, setPharmacyData, pharmacyData)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600"
                       placeholder="+91 9876543210"
                     />
