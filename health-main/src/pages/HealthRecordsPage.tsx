@@ -1,7 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, Download, FolderSync as Sync, Wifi, WifiOff, FileText, Calendar, Trash2 } from 'lucide-react';
+import {
+  Upload, Download, FolderSync as Sync, Wifi, WifiOff, FileText, Calendar, Trash2
+} from 'lucide-react';
+import { auth } from '../firebase';
 import { healthStorage, HealthRecord } from '../utils/storage';
+// If you added this helper as shown before, import it. Else, remove and use the fallback in handleDelete.
+import { deleteRecordServer } from '../utils/storage';
 
 const HealthRecordsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -9,33 +14,49 @@ const HealthRecordsPage: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [uploadModal, setUploadModal] = useState(false);
-  const [newRecord, setNewRecord] = useState({
+
+  // keep text fields in one object, and the actual file separately
+  const [newRecord, setNewRecord] = useState<{
+    title: string;
+    type: HealthRecord['type'];
+    description: string;
+  }>({
     title: '',
-    type: 'prescription' as HealthRecord['type'],
+    type: 'prescription',
     description: '',
-    file: ''
   });
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    loadRecords();
     const lastSyncTime = healthStorage.getFromLocal('lastSync');
-    setLastSync(lastSyncTime);
+    setLastSync(lastSyncTime || null);
+  }, []);
 
+  useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
+    // initial load
+    loadRecords();
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadRecords = async () => {
     try {
-      const healthRecords = await healthStorage.getHealthRecords();
+      const uid = auth.currentUser?.uid;
+      if (!uid) {
+        setRecords([]);
+        return;
+      }
+      const healthRecords = await healthStorage.getHealthRecords(uid);
+      // optional: sort newest first
+      healthRecords.sort((a: any, b: any) => (b.createdAt ?? b.date ?? '').localeCompare(a.createdAt ?? a.date ?? ''));
       setRecords(healthRecords);
     } catch (error) {
       console.error('Failed to load records:', error);
@@ -44,50 +65,61 @@ const HealthRecordsPage: React.FC = () => {
 
   const handleUpload = async () => {
     if (!newRecord.title || !newRecord.description) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      alert(t('auth.loginFirst', 'Please log in first.'));
+      return;
+    }
 
+    // Build the record; Firestore will assign id
     const record: HealthRecord = {
-      id: Date.now().toString(),
       title: newRecord.title,
       date: new Date().toISOString(),
       type: newRecord.type,
       description: newRecord.description,
-      file: newRecord.file,
-      synced: false
+      synced: false,
     };
 
     try {
-      await healthStorage.saveHealthRecord(record);
+      await healthStorage.saveHealthRecord(uid, record, newFile ?? undefined);
       await loadRecords();
       setUploadModal(false);
-      setNewRecord({ title: '', type: 'prescription', description: '', file: '' });
+      setNewRecord({ title: '', type: 'prescription', description: '' });
+      setNewFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
       console.error('Failed to save record:', error);
+      alert(t('records.uploadFailed', 'Failed to upload record.'));
     }
   };
 
   const handleSync = async () => {
     if (!isOnline) {
-      alert('Cannot sync while offline');
+      alert(t('records.cannotSyncOffline', 'Cannot sync while offline'));
       return;
     }
-
-    // Simulate sync process
-    const updatedRecords = records.map(record => ({ ...record, synced: true }));
-    setRecords(updatedRecords);
-    
+    // For Firestore-backed data, treat sync as "refresh from server"
+    await loadRecords();
     const syncTime = new Date().toISOString();
     setLastSync(syncTime);
     healthStorage.saveToLocal('lastSync', syncTime);
-
-    alert('Records synced successfully!');
+    alert(t('records.synced', 'Records synced successfully!'));
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id?: string) => {
+    if (!id) return;
     try {
-      await healthStorage.deleteHealthRecord(id);
+      // preferred: delete via server to remove Cloudinary asset + Firestore doc
+      if (typeof deleteRecordServer === 'function') {
+        await deleteRecordServer(id);
+      } else {
+        // fallback: delete only Firestore doc
+        await healthStorage.deleteHealthRecord(id);
+      }
       await loadRecords();
     } catch (error) {
       console.error('Failed to delete record:', error);
+      alert(t('records.deleteFailed', 'Failed to delete record.'));
     }
   };
 
@@ -95,7 +127,7 @@ const HealthRecordsPage: React.FC = () => {
     { value: 'prescription', label: 'Prescription' },
     { value: 'lab_report', label: 'Lab Report' },
     { value: 'medical_history', label: 'Medical History' },
-    { value: 'other', label: 'Other' }
+    { value: 'other', label: 'Other' },
   ];
 
   return (
@@ -104,7 +136,7 @@ const HealthRecordsPage: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">
           {t('records.title')}
         </h1>
-        
+
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
           <button
             onClick={() => setUploadModal(true)}
@@ -113,7 +145,7 @@ const HealthRecordsPage: React.FC = () => {
             <Upload className="h-4 w-4" />
             <span>{t('records.upload')}</span>
           </button>
-          
+
           <button
             onClick={handleSync}
             disabled={!isOnline}
@@ -139,12 +171,12 @@ const HealthRecordsPage: React.FC = () => {
               <WifiOff className="h-5 w-5 text-red-600" />
             )}
             <span className={`text-sm font-medium ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
-              {isOnline ? 'Online' : t('records.offline')}
+              {isOnline ? t('records.online', 'Online') : t('records.offline')}
             </span>
           </div>
           {lastSync && (
             <p className="text-sm text-gray-500">
-              {t('records.lastSync')}: {new Date(lastSync).toLocaleDateString()}
+              {t('records.lastSync')}: {new Date(lastSync).toLocaleString()}
             </p>
           )}
         </div>
@@ -155,7 +187,9 @@ const HealthRecordsPage: React.FC = () => {
         {records.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No health records found. Upload your first record to get started.</p>
+            <p className="text-gray-500">
+              {t('records.empty', 'No health records found. Upload your first record to get started.')}
+            </p>
           </div>
         ) : (
           records.map((record) => (
@@ -166,12 +200,12 @@ const HealthRecordsPage: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900">{record.title}</h3>
                     {!record.synced && (
                       <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
-                        Not Synced
+                        {t('records.notSynced', 'Not Synced')}
                       </span>
                     )}
                   </div>
                   <p className="text-gray-600 mb-2">{record.description}</p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex items-center flex-wrap gap-3 text-sm text-gray-500">
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4" />
                       <span>{new Date(record.date).toLocaleDateString()}</span>
@@ -179,12 +213,27 @@ const HealthRecordsPage: React.FC = () => {
                     <span className="px-2 py-1 bg-gray-100 rounded text-xs capitalize">
                       {record.type.replace('_', ' ')}
                     </span>
+
+                    {/* Download / View if fileUrl exists */}
+                    {record.fileUrl && (
+                      <a
+                        href={record.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-teal-700 hover:text-teal-800"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        {t('records.viewOrDownload', 'View / Download')}
+                      </a>
+                    )}
                   </div>
                 </div>
+
                 <div className="flex space-x-2 mt-4 sm:mt-0">
                   <button
-                    onClick={() => handleDelete(record.id)}
+                    onClick={() => handleDelete(record.id!)}
                     className="text-red-600 hover:text-red-700 p-2 transition-colors duration-200"
+                    title={t('records.delete', 'Delete')}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -202,24 +251,24 @@ const HealthRecordsPage: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               {t('records.upload')}
             </h2>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Record Title
+                  {t('records.titleLabel', 'Record Title')}
                 </label>
                 <input
                   type="text"
                   value={newRecord.title}
                   onChange={(e) => setNewRecord({ ...newRecord, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600"
-                  placeholder="e.g., Blood Test Report"
+                  placeholder={t('records.titlePh', 'e.g., Blood Test Report')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Record Type
+                  {t('records.typeLabel', 'Record Type')}
                 </label>
                 <select
                   value={newRecord.type}
@@ -236,32 +285,28 @@ const HealthRecordsPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                  {t('records.descLabel', 'Description')}
                 </label>
                 <textarea
                   value={newRecord.description}
                   onChange={(e) => setNewRecord({ ...newRecord, description: e.target.value })}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600"
-                  placeholder="Describe the record..."
+                  placeholder={t('records.descPh', 'Describe the record...')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  File (Optional)
+                  {t('records.fileLabel', 'File (Optional)')}
                 </label>
                 <input
+                  ref={fileInputRef}
                   type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
                   onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (e) => {
-                        setNewRecord({ ...newRecord, file: e.target?.result as string });
-                      };
-                      reader.readAsDataURL(file);
-                    }
+                    const file = e.target.files?.[0] || null;
+                    setNewFile(file);
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600"
                 />
@@ -270,16 +315,16 @@ const HealthRecordsPage: React.FC = () => {
 
             <div className="flex space-x-4 mt-6">
               <button
-                onClick={() => setUploadModal(false)}
+                onClick={() => { setUploadModal(false); setNewFile(null); }}
                 className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg transition-colors duration-200"
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
               <button
                 onClick={handleUpload}
                 className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg transition-colors duration-200"
               >
-                Upload
+                {t('records.upload')}
               </button>
             </div>
           </div>

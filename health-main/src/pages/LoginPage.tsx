@@ -19,26 +19,40 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      const user = authService.login(phone, password);
-      
-      if (user) {
-        // Redirect to appropriate dashboard
-        switch (user.role) {
-          case 'citizen':
-            navigate('/patient');
-            break;
-          case 'doctor':
-            navigate('/doctor');
-            break;
-          case 'pharmacy':
-            navigate('/pharmacy');
-            break;
-        }
-      } else {
-        setError('Invalid phone number or password');
+      if (!phone || !password) {
+        throw new Error('Phone number and password are required');
       }
-    } catch (error) {
-      setError('Login failed. Please try again.');
+
+      const user = await authService.login(phone, password);
+      
+      if (!user) {
+        throw new Error('Invalid phone number or password');
+      }
+
+      // Redirect to appropriate dashboard
+      switch (user.role) {
+        case 'citizen':
+          navigate('/patient');
+          break;
+        case 'doctor':
+          navigate('/doctor');
+          break;
+        case 'pharmacy':
+          navigate('/pharmacy');
+          break;
+        default:
+          throw new Error('Invalid user role');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setError(error.message || 'Login failed. Please try again.');
+      
+      // Handle specific Firebase auth errors
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        setError('Invalid phone number or password');
+      } else if (error.code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }

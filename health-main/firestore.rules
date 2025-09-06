@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Public read
+    match /doctors/{id} {
+      allow read: if true;
+      allow write: if request.auth != null && (userRole() == 'doctor'); // or admin only
+    }
+    match /medicines/{id} {
+      allow read: if true;
+      allow write: if request.auth != null && (userRole() == 'pharmacy');
+    }
+    match /symptoms/{id} {
+      allow read: if true;
+      allow write: if false; // seeded only
+    }
+
+    // Patient <-> Doctor scoped
+    match /consultations/{id} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null &&
+        (resource.data.patientId == request.auth.uid ||
+         resource.data.doctorId == request.auth.uid);
+    }
+
+    // Records: owner only
+    match /records/{id} {
+      allow create: if request.auth != null && request.resource.data.patientId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.patientId == request.auth.uid;
+    }
+  }
+}

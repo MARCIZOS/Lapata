@@ -61,42 +61,118 @@ const RegistrationPage: React.FC = () => {
     }
   };
 
+  const [error, setError] = useState<string>('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
       let data;
       switch (role) {
         case 'citizen':
-          data = citizenData;
+          data = { ...citizenData }; // Create a copy to avoid reference issues
           break;
         case 'doctor':
-          data = doctorData;
+          data = { ...doctorData };
           break;
         case 'pharmacy':
-          data = pharmacyData;
+          data = { ...pharmacyData };
           break;
         default:
+          setError('Invalid role selected');
           return;
       }
 
-      const user = authService.register(role, data);
-      
-      // Redirect to appropriate dashboard
-      switch (user.role) {
-        case 'citizen':
-          navigate('/patient');
-          break;
-        case 'doctor':
-          navigate('/doctor');
-          break;
-        case 'pharmacy':
-          navigate('/pharmacy');
-          break;
+      // Client-side validation
+      if (!data.phone || !data.password) {
+        setError('Phone number and password are required');
+        return;
       }
-    } catch (error) {
-      console.error('Registration failed:', error);
+
+      if (!/^\d{10}$/.test(data.phone)) {
+        setError('Phone number must be exactly 10 digits');
+        return;
+      }
+
+      if (data.password.length < 6) {
+        setError('Password must be at least 6 characters long');
+        return;
+      }
+
+      console.log('Submitting registration data:', { role, ...data, password: '****' });
+
+      try {
+        console.log('Starting registration...', { role, phone: data.phone });
+        const user = await authService.register(role, data);
+        
+        if (!user) {
+          throw new Error('Registration failed - no user returned');
+        }
+
+        console.log('Registration successful, redirecting...');
+
+        // Clear form data after successful registration
+        switch (role) {
+          case 'citizen':
+            setCitizenData({
+              name: '', phone: '', age: '', gender: '', village: '', password: ''
+            });
+            break;
+          case 'doctor':
+            setDoctorData({
+              name: '', phone: '', specialty: '', registrationId: '', experience: '', password: ''
+            });
+            break;
+          case 'pharmacy':
+            setPharmacyData({
+              storeName: '', ownerName: '', phone: '', licenseNo: '', address: '', password: ''
+            });
+            break;
+        }
+
+        // Navigate to login page after successful registration
+        navigate('/login', { 
+          state: { 
+            message: 'Registration successful! Please login with your credentials.',
+            phone: data.phone 
+          } 
+        });
+      } catch (err: any) {
+        console.error('Registration error:', err);
+        
+        switch(err.code) {
+          case 'auth/network-request-failed':
+            setError('Network error. Please check your internet connection and try again in a few moments.');
+            break;
+          case 'auth/email-already-in-use':
+          case 'auth/phone-number-already-exists':
+            setError('This phone number is already registered. Please try logging in or use a different number.');
+            break;
+          case 'auth/invalid-phone-number':
+            setError('The phone number format is invalid. Please enter a valid 10-digit phone number.');
+            break;
+          case 'auth/weak-password':
+            setError('The password must be at least 6 characters long and contain a mix of letters and numbers.');
+            break;
+          default:
+            setError(err.message || 'Registration failed. Please try again or contact support if the problem persists.');
+        }
+
+        // Log additional details for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('Registration error details:', {
+            code: err.code,
+            message: err.message,
+            role: role,
+            stack: err.stack
+          });
+        }
+      }
+    } catch (outerErr: any) {
+      console.error('Unexpected outer error:', outerErr);
+      setError('An unexpected error occurred. Please try again or contact support.');
     } finally {
       setLoading(false);
     }
@@ -138,6 +214,12 @@ const RegistrationPage: React.FC = () => {
           {/* Registration Form */}
           <div className="bg-white rounded-lg shadow-lg p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                  <span className="block sm:inline">{error}</span>
+                </div>
+              )}
+              
               {/* Role Selection */}
               <div className="flex items-center space-x-3 mb-6">
                 <RoleIcon className="h-6 w-6 text-teal-600" />
